@@ -372,7 +372,7 @@ static SigFlags ExploreSegment(Owner owner)
 			case MP_TUNNELBRIDGE: {
 				if (GetTileOwner(tile) != owner) continue;
 				if (GetTunnelBridgeTransportType(tile) != TRANSPORT_RAIL) continue;
-				DiagDirection dir = GetTunnelBridgeDirection(tile);
+				   DiagDirection dir = DirToDiagDir(GetTunnelBridgeDirection(tile));
 
 				if (enterdir == INVALID_DIAGDIR) { // incoming from the wormhole
 					if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(tile, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
@@ -497,7 +497,7 @@ static SigSegState UpdateSignalsInBuffer(Owner owner)
 			case MP_TUNNELBRIDGE:
 				/* 'optimization assert' - do not try to update signals when it is not needed */
 				assert(GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL);
-				assert(dir == INVALID_DIAGDIR || dir == ReverseDiagDir(GetTunnelBridgeDirection(tile)));
+				   assert(dir == INVALID_DIAGDIR || dir == ReverseDiagDir(DirToDiagDir(GetTunnelBridgeDirection(tile))));
 				_tbdset.Add(tile, INVALID_DIAGDIR);  // we can safely start from wormhole centre
 				_tbdset.Add(GetOtherTunnelBridgeEnd(tile), INVALID_DIAGDIR);
 				break;
@@ -632,6 +632,22 @@ void AddSideToSignalBuffer(TileIndex tile, DiagDirection side, Owner owner)
 	}
 }
 
+void AddSideToSignalBuffer(TileIndex tile, Direction side, Owner owner)
+{
+	/* do not allow signal updates for two companies in one run */
+	assert(_globset.IsEmpty() || owner == _last_owner);
+
+	_last_owner = owner;
+
+	_globset.Add(tile, DirToDiagDir(side));
+
+	if (_globset.Items() >= SIG_GLOB_UPDATE) {
+		/* too many items, force update */
+		UpdateSignalsInBuffer(_last_owner);
+		_last_owner = INVALID_OWNER;
+	}
+}
+
 /**
  * Update signals, starting at one side of a tile
  * Will check tile next to this at opposite side too
@@ -642,10 +658,10 @@ void AddSideToSignalBuffer(TileIndex tile, DiagDirection side, Owner owner)
  * @param owner owner whose signals we will update
  * @return the state of the signal segment
  */
-SigSegState UpdateSignalsOnSegment(TileIndex tile, DiagDirection side, Owner owner)
+SigSegState UpdateSignalsOnSegment(TileIndex tile, Direction side, Owner owner)
 {
 	assert(_globset.IsEmpty());
-	_globset.Add(tile, side);
+	_globset.Add(tile, DirToDiagDir(side));
 
 	return UpdateSignalsInBuffer(owner);
 }

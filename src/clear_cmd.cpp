@@ -354,7 +354,7 @@ get_out:;
 	} while (--i);
 }
 
-static TrackStatus GetTileTrackStatus_Clear(TileIndex, TransportType, uint, DiagDirection)
+static TrackStatus GetTileTrackStatus_Clear(TileIndex, TransportType, uint, Direction)
 {
 	return 0;
 }

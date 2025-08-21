@@ -437,8 +437,8 @@ static void FixOwnerOfRailTrack(Tile t)
 	/* try to find any connected rail */
 	for (DiagDirection dd = DIAGDIR_BEGIN; dd < DIAGDIR_END; dd++) {
 		TileIndex tt{t + TileOffsByDiagDir(dd)};
-		if (GetTileTrackStatus(t, TRANSPORT_RAIL, 0, dd) != 0 &&
-				GetTileTrackStatus(tt, TRANSPORT_RAIL, 0, ReverseDiagDir(dd)) != 0 &&
+	if (GetTileTrackStatus(t, TRANSPORT_RAIL, 0, DirToDirection(dd)) != 0 &&
+		GetTileTrackStatus(tt, TRANSPORT_RAIL, 0, DirToDirection(ReverseDiagDir(dd))) != 0 &&
 				Company::IsValidID(GetTileOwner(tt))) {
 			SetTileOwner(t, GetTileOwner(tt));
 			return;
@@ -1275,7 +1275,7 @@ bool AfterLoadGame()
 		for (Vehicle *v : Vehicle::Iterate()) {
 			if (!v->IsGroundVehicle()) continue;
 			if (IsBridgeTile(v->tile)) {
-				DiagDirection dir = GetTunnelBridgeDirection(v->tile);
+				Direction dir = GetTunnelBridgeDirection(v->tile);
 
 				if (dir != DirToDiagDir(v->direction)) continue;
 				switch (dir) {
@@ -2632,7 +2632,7 @@ bool AfterLoadGame()
 			if (GetSlopePixelZ(v->x_pos, v->y_pos, true) != v->z_pos) continue;
 
 			/* What way are we going? */
-			const DiagDirection dir = GetTunnelBridgeDirection(vtile);
+			const Direction dir = GetTunnelBridgeDirection(vtile);
 			const DiagDirection vdir = DirToDiagDir(v->direction);
 
 			/* Have we passed the visibility "switch" state already? */
@@ -2794,14 +2794,14 @@ bool AfterLoadGame()
 				 * However, this invalid state could be converted to new savegames
 				 * by loading and saving the game in a new version. */
 				v->z_pos = GetSlopePixelZ(v->x_pos, v->y_pos, true);
-				DiagDirection dir = GetTunnelBridgeDirection(v->tile);
-				if (v->type == VEH_TRAIN && !v->vehstatus.Test(VehState::Crashed) &&
-						v->direction != DiagDirToDir(dir)) {
+				Direction dir = GetTunnelBridgeDirection(v->tile);
+		if (v->type == VEH_TRAIN && !v->vehstatus.Test(VehState::Crashed) &&
+					   v->direction != dir) {
 					/* If the train has left the bridge, it shouldn't have
 					 * track == TRACK_BIT_WORMHOLE - this could happen
 					 * when the train was reversed while on the last "tick"
 					 * on the ramp before leaving the ramp to the bridge. */
-					Train::From(v)->track = DiagDirToDiagTrackBits(dir);
+					Train::From(v)->track = DiagDirToDiagTrackBits(DirToDiagDir(dir));
 				}
 			}
 

@@ -62,7 +62,7 @@ static void ChangeTileOwner_Void(TileIndex, Owner, Owner)
 	/* not used */
 }
 
-static TrackStatus GetTileTrackStatus_Void(TileIndex, TransportType, uint, DiagDirection)
+static TrackStatus GetTileTrackStatus_Void(TileIndex, TransportType, uint, Direction)
 {
 	return 0;
 }

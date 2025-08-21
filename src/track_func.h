@@ -1,3 +1,8 @@
+/**
+ * Maps an 8-way Direction to Track for tunnel/bridge logic
+ * @param dir The direction (0..7)
+ * @return The resulting Track
+ */
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -17,6 +22,31 @@
 
 using SetTrackBitIterator = SetBitIterator<Track, TrackBits>;
 using SetTrackdirBitIterator = SetBitIterator<Trackdir, TrackdirBits>;
+
+/**
+ * Maps an 8-way Direction to TrackBits for tunnel/bridge reservation
+ * @param dir The direction (0..7)
+ * @return The resulting TrackBits
+ */
+inline TrackBits DirectionToTrackBits(Direction dir)
+{
+	// Map cardinal directions to single track, diagonal directions to both tracks
+	switch (dir) {
+		case DIR_N:
+		case DIR_S:
+			return TRACK_BIT_X; // vertical
+		case DIR_E:
+		case DIR_W:
+			return TRACK_BIT_Y; // horizontal
+		case DIR_NE:
+		case DIR_SE:
+		case DIR_SW:
+		case DIR_NW:
+			return TRACK_BIT_X | TRACK_BIT_Y; // both
+		default:
+			return TRACK_BIT_NONE;
+	}
+}
 
 /**
  * Checks if a Track is valid.

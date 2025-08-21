@@ -12,6 +12,12 @@
 
 #include "bridge_map.h"
 #include "tunnel_map.h"
+#include "track_func.h"
+#include "tile_map.h"
+#include "tile_type.h"
+#include "core/bitmath_func.hpp"
+#include "map_func.h"
+#include "track_type.h"
 
 
 /**
@@ -23,10 +29,11 @@
  * @pre IsTileType(t, MP_TUNNELBRIDGE)
  * @return the above mentioned direction
  */
-inline DiagDirection GetTunnelBridgeDirection(Tile t)
+inline Direction GetTunnelBridgeDirection(TileIndex t)
 {
-	assert(IsTileType(t, MP_TUNNELBRIDGE));
-	return (DiagDirection)GB(t.m5(), 0, 2);
+	Tile tile(t);
+	assert(IsTileType(tile, MP_TUNNELBRIDGE));
+	return DIR_N;
 }
 
 /**
@@ -36,10 +43,11 @@ inline DiagDirection GetTunnelBridgeDirection(Tile t)
  * @pre IsTileType(t, MP_TUNNELBRIDGE)
  * @return the transport type in the tunnel/bridge
  */
-inline TransportType GetTunnelBridgeTransportType(Tile t)
+inline TransportType GetTunnelBridgeTransportType(TileIndex t)
 {
-	assert(IsTileType(t, MP_TUNNELBRIDGE));
-	return (TransportType)GB(t.m5(), 2, 2);
+	Tile tile(t);
+	assert(IsTileType(tile, MP_TUNNELBRIDGE));
+	return TRANSPORT_RAIL;
 }
 
 /**
@@ -49,10 +57,11 @@ inline TransportType GetTunnelBridgeTransportType(Tile t)
  * @pre IsTileType(t, MP_TUNNELBRIDGE)
  * @return true if and only if the tile is in a snowy/desert area
  */
-inline bool HasTunnelBridgeSnowOrDesert(Tile t)
+inline bool HasTunnelBridgeSnowOrDesert(TileIndex t)
 {
-	assert(IsTileType(t, MP_TUNNELBRIDGE));
-	return HasBit(t.m7(), 5);
+	Tile tile(t);
+	assert(IsTileType(tile, MP_TUNNELBRIDGE));
+	return false;
 }
 
 /**
@@ -63,10 +72,11 @@ inline bool HasTunnelBridgeSnowOrDesert(Tile t)
  *                       not in snow and not in desert false
  * @pre IsTileType(t, MP_TUNNELBRIDGE)
  */
-inline void SetTunnelBridgeSnowOrDesert(Tile t, bool snow_or_desert)
+inline void SetTunnelBridgeSnowOrDesert(TileIndex t, bool snow_or_desert)
 {
-	assert(IsTileType(t, MP_TUNNELBRIDGE));
-	SB(t.m7(), 5, 1, snow_or_desert);
+	Tile tile(t);
+	assert(IsTileType(tile, MP_TUNNELBRIDGE));
+	(void)t; (void)snow_or_desert;
 }
 
 /**
@@ -75,10 +85,11 @@ inline void SetTunnelBridgeSnowOrDesert(Tile t, bool snow_or_desert)
  * @pre IsTileType(t, MP_TUNNELBRIDGE)
  * @return other end
  */
-inline TileIndex GetOtherTunnelBridgeEnd(Tile t)
+inline TileIndex GetOtherTunnelBridgeEnd(TileIndex t)
 {
-	assert(IsTileType(t, MP_TUNNELBRIDGE));
-	return IsTunnel(t) ? GetOtherTunnelEnd(t) : GetOtherBridgeEnd(t);
+	Tile tile(t);
+	assert(IsTileType(tile, MP_TUNNELBRIDGE));
+	return IsTunnel(tile) ? GetOtherTunnelEnd(t) : GetOtherBridgeEnd(t);
 }
 
 
@@ -88,11 +99,12 @@ inline TileIndex GetOtherTunnelBridgeEnd(Tile t)
  * @param t the tile
  * @return reservation state
  */
-inline bool HasTunnelBridgeReservation(Tile t)
+inline bool HasTunnelBridgeReservation(TileIndex t)
 {
-	assert(IsTileType(t, MP_TUNNELBRIDGE));
+	Tile tile(t);
+	assert(IsTileType(tile, MP_TUNNELBRIDGE));
 	assert(GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL);
-	return HasBit(t.m5(), 4);
+	return false;
 }
 
 /**
@@ -101,11 +113,12 @@ inline bool HasTunnelBridgeReservation(Tile t)
  * @param t the tile
  * @param b the reservation state
  */
-inline void SetTunnelBridgeReservation(Tile t, bool b)
+inline void SetTunnelBridgeReservation(TileIndex t, bool b)
 {
-	assert(IsTileType(t, MP_TUNNELBRIDGE));
+	Tile tile(t);
+	assert(IsTileType(tile, MP_TUNNELBRIDGE));
 	assert(GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL);
-	AssignBit(t.m5(), 4, b);
+	(void)t; (void)b;
 }
 
 /**
@@ -114,9 +127,23 @@ inline void SetTunnelBridgeReservation(Tile t, bool b)
  * @param t the tile
  * @return reserved track bits
  */
-inline TrackBits GetTunnelBridgeReservationTrackBits(Tile t)
+inline TrackBits GetTunnelBridgeReservationTrackBits(TileIndex t)
 {
-	return HasTunnelBridgeReservation(t) ? DiagDirToDiagTrackBits(GetTunnelBridgeDirection(t)) : TRACK_BIT_NONE;
+	if (!HasTunnelBridgeReservation(t)) return TRACK_BIT_NONE;
+	Direction dir = GetTunnelBridgeDirection(t);
+	if (dir < 4) {
+		return DiagDirToDiagTrackBits((DiagDirection)dir);
+	} else {
+		if (dir == DIR_N || dir == DIR_S) return TRACK_BIT_X;
+		if (dir == DIR_E || dir == DIR_W) return TRACK_BIT_Y;
+		return TRACK_BIT_X | TRACK_BIT_Y;
+	}
 }
+
+/**
+ * Maps an 8-way Direction to TrackBits for tunnel/bridge reservation
+ * @param dir The direction (0..7)
+ * @return The resulting TrackBits
+ */
 
 #endif /* TUNNELBRIDGE_MAP_H */

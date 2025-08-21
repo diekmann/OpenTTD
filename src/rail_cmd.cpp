@@ -65,7 +65,6 @@ enum SignalOffsets {
 void ResetRailTypes()
 {
 	static_assert(std::size(_original_railtypes) <= std::size(_railtypes));
-
 	auto insert = std::copy(std::begin(_original_railtypes), std::end(_original_railtypes), std::begin(_railtypes));
 	std::fill(insert, std::end(_railtypes), RailTypeInfo{});
 
@@ -1688,7 +1687,7 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile, TileIndex area_
 				}
 
 				if (flags.Test(DoCommandFlag::Execute)) {
-					Track track = DiagDirToDiagTrack(GetTunnelBridgeDirection(tile));
+					   Track track = DiagDirToDiagTrack(DirToDiagDir(GetTunnelBridgeDirection(tile)));
 					if (HasTunnelBridgeReservation(tile)) {
 						Train *v = GetTrainForReservation(tile, track);
 						if (v != nullptr && !HasPowerOnRail(v->railtype, totype)) {
@@ -2432,7 +2431,7 @@ static void DrawTile_Track(TileInfo *ti)
 	} else {
 		/* draw depot */
 		const DrawTileSprites *dts;
-		DiagDirection dir = GetRailDepotDirection(ti->tile);
+			   Direction dir = DiagDirToDir(GetRailDepotDirection(ti->tile));
 
 		if (ti->tileh != SLOPE_FLAT) DrawFoundation(ti, FOUNDATION_LEVELED);
 
@@ -2465,7 +2464,7 @@ static void DrawTile_Track(TileInfo *ti)
 		if (rti->UsesOverlay()) {
 			SpriteID ground = GetCustomRailSprite(rti, ti->tile, RTSG_GROUND);
 
-			switch (GetRailDepotDirection(ti->tile)) {
+			   switch (GetRailDepotDirection(ti->tile)) {
 				case DIAGDIR_NE:
 					if (!IsInvisibilitySet(TO_BUILDINGS)) break;
 					[[fallthrough]];
@@ -2485,7 +2484,7 @@ static void DrawTile_Track(TileInfo *ti)
 			if (_settings_client.gui.show_track_reservation && HasDepotReservation(ti->tile)) {
 				SpriteID overlay = GetCustomRailSprite(rti, ti->tile, RTSG_OVERLAY);
 
-				switch (GetRailDepotDirection(ti->tile)) {
+				   switch (GetRailDepotDirection(ti->tile)) {
 					case DIAGDIR_NE:
 						if (!IsInvisibilitySet(TO_BUILDINGS)) break;
 						[[fallthrough]];
@@ -2505,7 +2504,7 @@ static void DrawTile_Track(TileInfo *ti)
 		} else {
 			/* PBS debugging, draw reserved tracks darker */
 			if (_game_mode != GM_MENU && _settings_client.gui.show_track_reservation && HasDepotReservation(ti->tile)) {
-				switch (GetRailDepotDirection(ti->tile)) {
+				   switch (GetRailDepotDirection(ti->tile)) {
 					case DIAGDIR_NE:
 						if (!IsInvisibilitySet(TO_BUILDINGS)) break;
 						[[fallthrough]];
@@ -2705,7 +2704,7 @@ set_ground:
 }
 
 
-static TrackStatus GetTileTrackStatus_Track(TileIndex tile, TransportType mode, uint, DiagDirection side)
+static TrackStatus GetTileTrackStatus_Track(TileIndex tile, TransportType mode, uint, Direction side)
 {
 	/* Case of half tile slope with water. */
 	if (mode == TRANSPORT_WATER && IsPlainRail(tile) && GetRailGroundType(tile) == RAIL_GROUND_WATER && IsSlopeWithOneCornerRaised(GetTileSlope(tile))) {

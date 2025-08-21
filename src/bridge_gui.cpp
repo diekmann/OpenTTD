@@ -60,10 +60,10 @@ void CcBuildBridge(Commands, const CommandCost &result, TileIndex end_tile, Tile
 	if (_settings_client.sound.confirm) SndPlayTileFx(SND_27_CONSTRUCTION_BRIDGE, end_tile);
 
 	if (transport_type == TRANSPORT_ROAD) {
-		DiagDirection end_direction = ReverseDiagDir(GetTunnelBridgeDirection(end_tile));
+		DiagDirection end_direction = ReverseDiagDir(DirToDiagDir(GetTunnelBridgeDirection(end_tile)));
 		ConnectRoadToStructure(end_tile, end_direction);
 
-		DiagDirection start_direction = ReverseDiagDir(GetTunnelBridgeDirection(tile_start));
+		DiagDirection start_direction = ReverseDiagDir(DirToDiagDir(GetTunnelBridgeDirection(tile_start)));
 		ConnectRoadToStructure(tile_start, start_direction);
 	}
 }

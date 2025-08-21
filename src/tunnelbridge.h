@@ -13,7 +13,7 @@
 #include "map_func.h"
 #include "tile_map.h"
 
-void MarkBridgeDirty(TileIndex begin, TileIndex end, DiagDirection direction, uint bridge_height);
+void MarkBridgeDirty(TileIndex begin, TileIndex end, Direction direction, uint bridge_height);
 void MarkBridgeDirty(TileIndex tile);
 
 /**

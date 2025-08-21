@@ -208,12 +208,12 @@ static PBSTileInfo FollowReservation(Owner o, RailTypes rts, TileIndex tile, Tra
 		if (reserved == TRACKDIR_BIT_NONE) {
 			if (ft.is_station) {
 				/* Check skipped station tiles as well, maybe our reservation ends inside the station. */
-				TileIndexDiff diff = TileOffsByDiagDir(ft.exitdir);
+				   TileIndexDiff diff = TileOffsByDiagDir(DirToDiagDir(ft.exitdir));
 				while (ft.tiles_skipped-- > 0) {
 					ft.new_tile -= diff;
 					if (HasStationReservation(ft.new_tile)) {
 						tile = ft.new_tile;
-						trackdir = DiagDirToDiagTrackdir(ft.exitdir);
+							   trackdir = DiagDirToDiagTrackdir(DirToDiagDir(ft.exitdir));
 						break;
 					}
 				}
@@ -397,7 +397,7 @@ bool IsSafeWaitingPosition(const Train *v, TileIndex tile, Trackdir trackdir, bo
 	}
 
 	/* Check for reachable tracks. */
-	ft.new_td_bits &= DiagdirReachesTrackdirs(ft.exitdir);
+	ft.new_td_bits &= DiagdirReachesTrackdirs(DirToDiagDir(ft.exitdir));
 	if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetTileRailType(ft.new_tile), forbid_90deg)) ft.new_td_bits &= ~TrackdirCrossesTrackdirs(trackdir);
 	if (ft.new_td_bits == TRACKDIR_BIT_NONE) return include_line_end;
 
@@ -443,7 +443,7 @@ bool IsWaitingPositionFree(const Train *v, TileIndex tile, Trackdir trackdir, bo
 	if (!ft.Follow(tile, trackdir)) return true;
 
 	/* Check for reachable tracks. */
-	ft.new_td_bits &= DiagdirReachesTrackdirs(ft.exitdir);
+	ft.new_td_bits &= DiagdirReachesTrackdirs(DirToDiagDir(ft.exitdir));
 	if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetTileRailType(ft.new_tile), forbid_90deg)) ft.new_td_bits &= ~TrackdirCrossesTrackdirs(trackdir);
 
 	return !HasReservedTracks(ft.new_tile, TrackdirBitsToTrackBits(ft.new_td_bits));

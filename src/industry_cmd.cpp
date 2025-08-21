@@ -954,7 +954,7 @@ static bool ClickTile_Industry(TileIndex tile)
 	return true;
 }
 
-static TrackStatus GetTileTrackStatus_Industry(TileIndex, TransportType, uint, DiagDirection)
+static TrackStatus GetTileTrackStatus_Industry(TileIndex, TransportType, uint, Direction)
 {
 	return 0;
 }
@@ -3215,7 +3215,7 @@ extern const TileTypeProcs _tile_type_industry_procs = {
 	ClearTile_Industry,          // clear_tile_proc
 	AddAcceptedCargo_Industry,   // add_accepted_cargo_proc
 	GetTileDesc_Industry,        // get_tile_desc_proc
-	GetTileTrackStatus_Industry, // get_tile_track_status_proc
+		GetTileTrackStatus_Industry, // get_tile_track_status_proc
 	ClickTile_Industry,          // click_tile_proc
 	AnimateTile_Industry,        // animate_tile_proc
 	TileLoop_Industry,           // tile_loop_proc

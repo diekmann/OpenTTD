@@ -100,9 +100,9 @@ static TrackBits GetRailTrackBitsUniversal(TileIndex t, DiagDirections *override
 			if (GetTunnelBridgeTransportType(t) != TRANSPORT_RAIL) return TRACK_BIT_NONE;
 			if (!HasRailCatenary(GetRailType(t))) return TRACK_BIT_NONE;
 			if (override != nullptr && (IsTunnel(t) || GetTunnelBridgeLength(t, GetOtherBridgeEnd(t)) > 0)) {
-				*override = GetTunnelBridgeDirection(t);
+				   *override = DirToDiagDir(GetTunnelBridgeDirection(t));
 			}
-			return DiagDirToDiagTrackBits(GetTunnelBridgeDirection(t));
+			   return DiagDirToDiagTrackBits(DirToDiagDir(GetTunnelBridgeDirection(t)));
 
 		case MP_ROAD:
 			if (!IsLevelCrossing(t)) return TRACK_BIT_NONE;
@@ -204,7 +204,7 @@ static void AdjustTileh(TileIndex tile, Slope *tileh)
 		} else if (*tileh != SLOPE_FLAT) {
 			*tileh = SLOPE_FLAT;
 		} else {
-			*tileh = InclinedSlope(GetTunnelBridgeDirection(tile));
+			   *tileh = InclinedSlope(DirToDiagDir(GetTunnelBridgeDirection(tile)));
 		}
 	}
 }
@@ -248,7 +248,7 @@ static int GetPCPElevation(TileIndex tile, DiagDirection pcp_pos)
  */
 void DrawRailCatenaryOnTunnel(const TileInfo *ti)
 {
-	DiagDirection dir = GetTunnelBridgeDirection(ti->tile);
+		DiagDirection dir = DirToDiagDir(GetTunnelBridgeDirection(ti->tile));
 
 	SpriteID wire_base = GetWireBase(ti->tile);
 
@@ -317,7 +317,7 @@ static void DrawRailCatenaryRailway(const TileInfo *ti)
 		tileh[TS_NEIGHBOUR] = GetTileSlope(neighbour);
 		track_config[TS_NEIGHBOUR] = GetRailTrackBitsUniversal(neighbour, nullptr);
 		wire_config[TS_NEIGHBOUR] = MaskWireBits(neighbour, track_config[TS_NEIGHBOUR]);
-		if (IsTunnelTile(neighbour) && i != GetTunnelBridgeDirection(neighbour)) wire_config[TS_NEIGHBOUR] = track_config[TS_NEIGHBOUR] = TRACK_BIT_NONE;
+		if (IsTunnelTile(neighbour) && i != DirToDiagDir(GetTunnelBridgeDirection(neighbour))) wire_config[TS_NEIGHBOUR] = track_config[TS_NEIGHBOUR] = TRACK_BIT_NONE;
 
 		/* Ignore station tiles that allow neither wires nor pylons. */
 		if (IsRailStationTile(neighbour) && !CanStationTileHavePylons(neighbour) && !CanStationTileHaveWires(neighbour)) wire_config[TS_NEIGHBOUR] = track_config[TS_NEIGHBOUR] = TRACK_BIT_NONE;
@@ -337,7 +337,7 @@ static void DrawRailCatenaryRailway(const TileInfo *ti)
 			/* Next to us, we have a bridge head, don't worry about that one, if it shows away from us */
 			if (_track_source_tile[i][k] == TS_NEIGHBOUR &&
 			    IsBridgeTile(neighbour) &&
-			    GetTunnelBridgeDirection(neighbour) == ReverseDiagDir(i)) {
+						   DirToDiagDir(GetTunnelBridgeDirection(neighbour)) == ReverseDiagDir(i)) {
 				continue;
 			}
 
@@ -371,7 +371,7 @@ static void DrawRailCatenaryRailway(const TileInfo *ti)
 		/* Read the foundations if they are present, and adjust the tileh */
 		if (track_config[TS_NEIGHBOUR] != TRACK_BIT_NONE && IsTileType(neighbour, MP_RAILWAY) && HasRailCatenary(GetRailType(neighbour))) foundation = GetRailFoundation(tileh[TS_NEIGHBOUR], track_config[TS_NEIGHBOUR]);
 		if (IsBridgeTile(neighbour)) {
-			foundation = GetBridgeFoundation(tileh[TS_NEIGHBOUR], DiagDirToAxis(GetTunnelBridgeDirection(neighbour)));
+			   foundation = GetBridgeFoundation(tileh[TS_NEIGHBOUR], DiagDirToAxis(DirToDiagDir(GetTunnelBridgeDirection(neighbour))));
 		}
 
 		ApplyFoundationToSlope(foundation, tileh[TS_NEIGHBOUR]);

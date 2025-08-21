@@ -97,12 +97,12 @@ static bool TestTownOwnsBridge(TileIndex tile, const Town *t)
 {
 	if (!IsTileOwner(tile, OWNER_TOWN)) return false;
 
-	TileIndex adjacent = tile + TileOffsByDiagDir(ReverseDiagDir(GetTunnelBridgeDirection(tile)));
+	TileIndex adjacent = tile + TileOffsByDiagDir(ReverseDiagDir(DirToDiagDir(GetTunnelBridgeDirection(tile))));
 	bool town_owned = IsTileType(adjacent, MP_ROAD) && IsTileOwner(adjacent, OWNER_TOWN) && GetTownIndex(adjacent) == t->index;
 
 	if (!town_owned) {
 		/* Or other adjacent road */
-		adjacent = tile + TileOffsByDiagDir(ReverseDiagDir(GetTunnelBridgeDirection(GetOtherTunnelBridgeEnd(tile))));
+	adjacent = tile + TileOffsByDiagDir(ReverseDiagDir(DirToDiagDir(GetTunnelBridgeDirection(GetOtherTunnelBridgeEnd(tile)))));
 		town_owned = IsTileType(adjacent, MP_ROAD) && IsTileOwner(adjacent, OWNER_TOWN) && GetTownIndex(adjacent) == t->index;
 	}
 
@@ -898,7 +898,7 @@ static void GetTileDesc_Town(TileIndex tile, TileDesc &td)
 	td.owner[0] = OWNER_TOWN;
 }
 
-static TrackStatus GetTileTrackStatus_Town(TileIndex, TransportType, uint, DiagDirection)
+static TrackStatus GetTileTrackStatus_Town(TileIndex, TransportType, uint, Direction)
 {
 	/* not used */
 	return 0;
@@ -1844,7 +1844,7 @@ static bool GrowTownAtRoad(Town *t, TileIndex tile, TownExpandModes modes)
 
 		if (IsTileType(tile, MP_TUNNELBRIDGE)) {
 			/* Only build in the direction away from the tunnel or bridge. */
-			target_dir = ReverseDiagDir(GetTunnelBridgeDirection(tile));
+			target_dir = ReverseDiagDir(DirToDiagDir(GetTunnelBridgeDirection(tile)));
 		} else {
 			/* Select a random bit from the blockmask, walk a step
 			 * and continue the search from there. */

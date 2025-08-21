@@ -1071,7 +1071,7 @@ static Trackdir FollowPreviousRoadVehicle(const RoadVehicle *v, const RoadVehicl
 		DiagDirection diag_dir = INVALID_DIAGDIR;
 
 		if (IsTileType(tile, MP_TUNNELBRIDGE)) {
-			diag_dir = GetTunnelBridgeDirection(tile);
+			diag_dir = DirToDiagDir(GetTunnelBridgeDirection(tile));
 		} else if (IsRoadDepotTile(tile)) {
 			diag_dir = ReverseDiagDir(GetRoadDepotDirection(tile));
 		}

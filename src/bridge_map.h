@@ -125,7 +125,7 @@ inline void SetBridgeMiddle(Tile t, Axis a)
  * @param tt         the transport type of the bridge
  * @note this function should not be called directly.
  */
-inline void MakeBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirection d, TransportType tt)
+inline void MakeBridgeRamp(Tile t, Owner o, BridgeType bridgetype, Direction d, TransportType tt)
 {
 	SetTileType(t, MP_TUNNELBRIDGE);
 	SetTileOwner(t, o);
@@ -150,7 +150,7 @@ inline void MakeBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirection
  * @param road_rt    the road type of the bridge
  * @param tram_rt    the tram type of the bridge
  */
-inline void MakeRoadBridgeRamp(Tile t, Owner o, Owner owner_road, Owner owner_tram, BridgeType bridgetype, DiagDirection d, RoadType road_rt, RoadType tram_rt)
+inline void MakeRoadBridgeRamp(Tile t, Owner o, Owner owner_road, Owner owner_tram, BridgeType bridgetype, Direction d, RoadType road_rt, RoadType tram_rt)
 {
 	MakeBridgeRamp(t, o, bridgetype, d, TRANSPORT_ROAD);
 	SetRoadOwner(t, RTT_ROAD, owner_road);
@@ -166,7 +166,7 @@ inline void MakeRoadBridgeRamp(Tile t, Owner o, Owner owner_road, Owner owner_tr
  * @param d          the direction this ramp must be facing
  * @param rt         the rail type of the bridge
  */
-inline void MakeRailBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirection d, RailType rt)
+inline void MakeRailBridgeRamp(Tile t, Owner o, BridgeType bridgetype, Direction d, RailType rt)
 {
 	MakeBridgeRamp(t, o, bridgetype, d, TRANSPORT_RAIL);
 	SetRailType(t, rt);
@@ -178,7 +178,7 @@ inline void MakeRailBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirec
  * @param o          the new owner of the bridge ramp
  * @param d          the direction this ramp must be facing
  */
-inline void MakeAqueductBridgeRamp(Tile t, Owner o, DiagDirection d)
+inline void MakeAqueductBridgeRamp(Tile t, Owner o, Direction d)
 {
 	MakeBridgeRamp(t, o, 0, d, TRANSPORT_WATER);
 }

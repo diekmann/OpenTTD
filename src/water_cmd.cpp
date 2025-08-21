@@ -685,7 +685,7 @@ bool IsWateredTile(TileIndex tile, Direction from)
 
 		case MP_OBJECT: return IsTileOnWater(tile);
 
-		case MP_TUNNELBRIDGE: return GetTunnelBridgeTransportType(tile) == TRANSPORT_WATER && ReverseDiagDir(GetTunnelBridgeDirection(tile)) == DirToDiagDir(from);
+	case MP_TUNNELBRIDGE: return GetTunnelBridgeTransportType(tile) == TRANSPORT_WATER && ReverseDiagDir(DirToDiagDir(GetTunnelBridgeDirection(tile))) == DirToDiagDir(from);
 
 		case MP_VOID: return true; // consider map border as water, esp. for rivers
 
@@ -1327,8 +1327,9 @@ void ConvertGroundTilesIntoWaterTiles()
 	}
 }
 
-static TrackStatus GetTileTrackStatus_Water(TileIndex tile, TransportType mode, uint, DiagDirection)
+static TrackStatus GetTileTrackStatus_Water(TileIndex tile, TransportType mode, uint, Direction side)
 {
+	DiagDirection diagdir = DirToDiagDir(side);
 	static const TrackBits coast_tracks[] = {TRACK_BIT_NONE, TRACK_BIT_RIGHT, TRACK_BIT_UPPER, TRACK_BIT_NONE, TRACK_BIT_LEFT, TRACK_BIT_NONE, TRACK_BIT_NONE,
 		TRACK_BIT_NONE, TRACK_BIT_LOWER, TRACK_BIT_NONE, TRACK_BIT_NONE, TRACK_BIT_NONE, TRACK_BIT_NONE, TRACK_BIT_NONE, TRACK_BIT_NONE, TRACK_BIT_NONE};
 

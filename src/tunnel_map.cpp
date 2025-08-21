@@ -21,11 +21,11 @@
  */
 TileIndex GetOtherTunnelEnd(TileIndex tile)
 {
-	DiagDirection dir = GetTunnelBridgeDirection(tile);
-	TileIndexDiff delta = TileOffsByDiagDir(dir);
+	Direction dir = GetTunnelBridgeDirection(tile);
+	TileIndexDiff delta = TileOffsByDir(dir);
 	int z = GetTileZ(tile);
 
-	dir = ReverseDiagDir(dir);
+	dir = ReverseDir(dir);
 	do {
 		tile += delta;
 	} while (
@@ -47,7 +47,8 @@ TileIndex GetOtherTunnelEnd(TileIndex tile)
  */
 bool IsTunnelInWayDir(TileIndex tile, int z, DiagDirection dir)
 {
-	TileIndexDiff delta = TileOffsByDiagDir(dir);
+	// Overload for Direction
+	TileIndexDiff delta = TileOffsByDir((Direction)dir);
 	int height;
 
 	do {
@@ -56,7 +57,7 @@ bool IsTunnelInWayDir(TileIndex tile, int z, DiagDirection dir)
 		height = GetTileZ(tile);
 	} while (z < height);
 
-	return z == height && IsTunnelTile(tile) && GetTunnelBridgeDirection(tile) == dir;
+	return z == height && IsTunnelTile(tile) && GetTunnelBridgeDirection(tile) == (Direction)dir;
 }
 
 /**
@@ -67,6 +68,7 @@ bool IsTunnelInWayDir(TileIndex tile, int z, DiagDirection dir)
  */
 bool IsTunnelInWay(TileIndex tile, int z)
 {
-	return IsTunnelInWayDir(tile, z, (TileX(tile) > (Map::MaxX() / 2)) ? DIAGDIR_NE : DIAGDIR_SW) ||
-			IsTunnelInWayDir(tile, z, (TileY(tile) > (Map::MaxY() / 2)) ? DIAGDIR_NW : DIAGDIR_SE);
+	// Use Direction for all checks
+	return IsTunnelInWayDir(tile, z, DirToDiagDir((TileX(tile) > (Map::MaxX() / 2)) ? DIR_NE : DIR_SW)) ||
+		   IsTunnelInWayDir(tile, z, DirToDiagDir((TileY(tile) > (Map::MaxY() / 2)) ? DIR_NW : DIR_SE));
 }

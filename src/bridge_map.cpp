@@ -59,7 +59,7 @@ TileIndex GetSouthernBridgeEnd(TileIndex t)
 TileIndex GetOtherBridgeEnd(TileIndex tile)
 {
 	assert(IsBridgeTile(tile));
-	return GetBridgeEnd(tile, GetTunnelBridgeDirection(tile));
+	return GetBridgeEnd(tile, DirToDiagDir(GetTunnelBridgeDirection(tile)));
 }
 
 /**
@@ -70,7 +70,7 @@ TileIndex GetOtherBridgeEnd(TileIndex tile)
 int GetBridgeHeight(TileIndex t)
 {
 	auto [tileh, h] = GetTileSlopeZ(t);
-	Foundation f = GetBridgeFoundation(tileh, DiagDirToAxis(GetTunnelBridgeDirection(t)));
+	Foundation f = GetBridgeFoundation(tileh, DiagDirToAxis(DirToDiagDir(GetTunnelBridgeDirection(t))));
 
 	/* one height level extra for the ramp */
 	return h + 1 + ApplyFoundationToSlope(f, tileh);

@@ -121,10 +121,11 @@ DECLARE_INCREMENT_DECREMENT_OPERATORS(DiagDirDiff)
  * align the north-east edge (and south-west) edge.
  */
 enum Axis : uint8_t {
-	AXIS_X = 0,          ///< The X axis
-	AXIS_Y = 1,          ///< The y axis
-	AXIS_END,            ///< Used for iterations
-	INVALID_AXIS = 0xFF, ///< Flag for an invalid Axis
+		AXIS_X = 0,          ///< The X axis
+		AXIS_Y = 1,          ///< The y axis
+		AXIS_END,            ///< Used for iterations
+		AXIS_NONE = 0xFE,    ///< Sentinel value for 'no axis' (for compatibility)
+		INVALID_AXIS = 0xFF, ///< Flag for an invalid Axis
 };
 DECLARE_ENUM_AS_ADDABLE(Axis)
 

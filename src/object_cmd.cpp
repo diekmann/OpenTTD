@@ -721,8 +721,11 @@ static void TileLoop_Object(TileIndex tile)
 }
 
 
-static TrackStatus GetTileTrackStatus_Object(TileIndex, TransportType, uint, DiagDirection)
+static TrackStatus GetTileTrackStatus_Object(TileIndex, TransportType, uint, Direction dir)
 {
+	// Convert Direction to DiagDirection for compatibility
+	DiagDirection diagdir = DirToDiagDir(dir);
+	(void)diagdir; // Not used, but placeholder for future logic
 	return 0;
 }
 
@@ -935,7 +938,7 @@ extern const TileTypeProcs _tile_type_object_procs = {
 	ClearTile_Object,            // clear_tile_proc
 	AddAcceptedCargo_Object,     // add_accepted_cargo_proc
 	GetTileDesc_Object,          // get_tile_desc_proc
-	GetTileTrackStatus_Object,   // get_tile_track_status_proc
+	GetTileTrackStatus_Object,   // get_tile_track_status_proc (now expects Direction)
 	ClickTile_Object,            // click_tile_proc
 	AnimateTile_Object,          // animate_tile_proc
 	TileLoop_Object,             // tile_loop_proc

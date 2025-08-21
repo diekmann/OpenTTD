@@ -144,11 +144,11 @@ void CcBuildRoadTunnel(Commands, const CommandCost &result, TileIndex start_tile
 		if (_settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, start_tile);
 		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 
-		DiagDirection start_direction = ReverseDiagDir(GetTunnelBridgeDirection(start_tile));
+		DiagDirection start_direction = ReverseDiagDir(DirToDiagDir(GetTunnelBridgeDirection(start_tile)));
 		ConnectRoadToStructure(start_tile, start_direction);
 
 		TileIndex end_tile = GetOtherTunnelBridgeEnd(start_tile);
-		DiagDirection end_direction = ReverseDiagDir(GetTunnelBridgeDirection(end_tile));
+		DiagDirection end_direction = ReverseDiagDir(DirToDiagDir(GetTunnelBridgeDirection(end_tile)));
 		ConnectRoadToStructure(end_tile, end_direction);
 	} else {
 		SetRedErrorSquare(_build_tunnel_endtile);

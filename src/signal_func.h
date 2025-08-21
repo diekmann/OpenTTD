@@ -53,9 +53,11 @@ enum SigSegState : uint8_t {
 };
 
 SigSegState UpdateSignalsOnSegment(TileIndex tile, DiagDirection side, Owner owner);
+SigSegState UpdateSignalsOnSegment(TileIndex tile, Direction side, Owner owner);
 void SetSignalsOnBothDir(TileIndex tile, Track track, Owner owner);
 void AddTrackToSignalBuffer(TileIndex tile, Track track, Owner owner);
 void AddSideToSignalBuffer(TileIndex tile, DiagDirection side, Owner owner);
+void AddSideToSignalBuffer(TileIndex tile, Direction side, Owner owner);
 void UpdateSignalsInBuffer();
 
 #endif /* SIGNAL_FUNC_H */

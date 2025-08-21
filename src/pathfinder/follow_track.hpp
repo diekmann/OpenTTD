@@ -41,7 +41,7 @@ struct CFollowTrackT {
 	Trackdir old_td; ///< the trackdir (the vehicle was on) before move
 	TileIndex new_tile; ///< the new tile (the vehicle has entered)
 	TrackdirBits new_td_bits; ///< the new set of available trackdirs
-	DiagDirection exitdir; ///< exit direction (leaving the old tile)
+	Direction exitdir; ///< exit direction (leaving the old tile)
 	bool is_tunnel; ///< last turn passed tunnel
 	bool is_bridge; ///< last turn passed bridge ramp
 	bool is_station; ///< last turn passed station
@@ -78,7 +78,7 @@ struct CFollowTrackT {
 		this->old_td = INVALID_TRACKDIR;
 		this->new_tile = INVALID_TILE;
 		this->new_td_bits = TRACKDIR_BIT_NONE;
-		this->exitdir = INVALID_DIAGDIR;
+	this->exitdir = INVALID_DIR;
 		this->is_station = false;
 		this->is_bridge = false;
 		this->is_tunnel = false;
@@ -130,12 +130,12 @@ struct CFollowTrackT {
 			return (old_tile_valid_dirs & TrackdirToTrackdirBits(this->old_td)) != TRACKDIR_BIT_NONE;
 		}());
 
-		this->exitdir = TrackdirToExitdir(this->old_td);
+	this->exitdir = (Direction)TrackdirToExitdir(this->old_td);
 		if (this->ForcedReverse()) return true;
 		if (!this->CanExitOldTile()) return false;
 		this->FollowTileExit();
 		if (!this->QueryNewTileTrackStatus()) return TryReverse();
-		this->new_td_bits &= DiagdirReachesTrackdirs(this->exitdir);
+	this->new_td_bits &= DiagdirReachesTrackdirs(DirToDiagDir(this->exitdir));
 		if (this->new_td_bits == TRACKDIR_BIT_NONE || !this->CanEnterNewTile()) {
 			/* In case we can't enter the next tile, but are
 			 * a normal road vehicle, then we can actually
@@ -173,7 +173,7 @@ struct CFollowTrackT {
 
 		if (this->is_station) {
 			/* Check skipped station tiles as well. */
-			TileIndexDiff diff = TileOffsByDiagDir(this->exitdir);
+		TileIndexDiff diff = TileOffsByDiagDir(DirToDiagDir(this->exitdir));
 			for (TileIndex tile = this->new_tile - diff * this->tiles_skipped; tile != this->new_tile; tile += diff) {
 				if (HasStationReservation(tile)) {
 					this->new_td_bits = TRACKDIR_BIT_NONE;
@@ -208,7 +208,7 @@ protected:
 
 		/* extra handling for tunnels and bridges in our direction */
 		if (IsTileType(this->old_tile, MP_TUNNELBRIDGE)) {
-			DiagDirection enterdir = GetTunnelBridgeDirection(this->old_tile);
+			Direction enterdir = GetTunnelBridgeDirection(this->old_tile);
 			if (enterdir == this->exitdir) {
 				/* we are entering the tunnel / bridge */
 				if (IsTunnel(this->old_tile)) {
@@ -221,11 +221,11 @@ protected:
 				this->tiles_skipped = GetTunnelBridgeLength(this->new_tile, this->old_tile);
 				return;
 			}
-			assert(ReverseDiagDir(enterdir) == this->exitdir);
+			assert(ReverseDir(enterdir) == this->exitdir);
 		}
 
 		/* normal or station tile, do one step */
-		this->new_tile = TileAddByDiagDir(this->old_tile, this->exitdir);
+		this->new_tile = TileAddByDir(this->old_tile, this->exitdir);
 
 		/* special handling for stations */
 		if (IsRailTT() && HasStationTileRail(this->new_tile)) {
@@ -253,7 +253,7 @@ protected:
 	{
 		/* road stop can be left at one direction only unless it's a drive-through stop */
 		if (IsRoadTT() && IsBayRoadStopTile(this->old_tile)) {
-			DiagDirection exitdir = GetBayRoadStopDir(this->old_tile);
+			Direction exitdir = DiagDirToDir(GetBayRoadStopDir(this->old_tile));
 			if (exitdir != this->exitdir) {
 				this->err = EC_NO_WAY;
 				return false;
@@ -262,8 +262,8 @@ protected:
 
 		/* single tram bits can only be left in one direction */
 		if (this->IsTram()) {
-			DiagDirection single_tram = GetSingleTramBit(this->old_tile);
-			if (single_tram != INVALID_DIAGDIR && single_tram != this->exitdir) {
+			Direction single_tram = DiagDirToDir(GetSingleTramBit(this->old_tile));
+			if (single_tram != DIR_END && single_tram != this->exitdir) {
 				this->err = EC_NO_WAY;
 				return false;
 			}
@@ -271,7 +271,7 @@ protected:
 
 		/* road depots can be also left in one direction only */
 		if (IsRoadTT() && IsDepotTypeTile(this->old_tile, TT())) {
-			DiagDirection exitdir = GetRoadDepotDirection(this->old_tile);
+			Direction exitdir = DiagDirToDir(GetRoadDepotDirection(this->old_tile));
 			if (exitdir != this->exitdir) {
 				this->err = EC_NO_WAY;
 				return false;
@@ -285,8 +285,8 @@ protected:
 	{
 		if (IsRoadTT() && IsBayRoadStopTile(this->new_tile)) {
 			/* road stop can be entered from one direction only unless it's a drive-through stop */
-			DiagDirection exitdir = GetBayRoadStopDir(this->new_tile);
-			if (ReverseDiagDir(exitdir) != this->exitdir) {
+			Direction exitdir = DiagDirToDir(GetBayRoadStopDir(this->new_tile));
+			if (ReverseDir(exitdir) != this->exitdir) {
 				this->err = EC_NO_WAY;
 				return false;
 			}
@@ -294,8 +294,8 @@ protected:
 
 		/* single tram bits can only be entered from one direction */
 		if (this->IsTram()) {
-			DiagDirection single_tram = this->GetSingleTramBit(this->new_tile);
-			if (single_tram != INVALID_DIAGDIR && single_tram != ReverseDiagDir(this->exitdir)) {
+			Direction single_tram = DiagDirToDir(this->GetSingleTramBit(this->new_tile));
+			if (single_tram != DIR_END && single_tram != ReverseDir(this->exitdir)) {
 				this->err = EC_NO_WAY;
 				return false;
 			}
@@ -303,8 +303,8 @@ protected:
 
 		/* road and rail depots can also be entered from one direction only */
 		if (IsRoadTT() && IsDepotTypeTile(this->new_tile, TT())) {
-			DiagDirection exitdir = GetRoadDepotDirection(this->new_tile);
-			if (ReverseDiagDir(exitdir) != this->exitdir) {
+			Direction exitdir = DiagDirToDir(GetRoadDepotDirection(this->new_tile));
+			if (ReverseDir(exitdir) != this->exitdir) {
 				this->err = EC_NO_WAY;
 				return false;
 			}
@@ -315,8 +315,8 @@ protected:
 			}
 		}
 		if (IsRailTT() && IsDepotTypeTile(this->new_tile, TT())) {
-			DiagDirection exitdir = GetRailDepotDirection(this->new_tile);
-			if (ReverseDiagDir(exitdir) != this->exitdir) {
+			Direction exitdir = DiagDirToDir(GetRailDepotDirection(this->new_tile));
+			if (ReverseDir(exitdir) != this->exitdir) {
 				this->err = EC_NO_WAY;
 				return false;
 			}
@@ -354,7 +354,7 @@ protected:
 		if (IsTileType(this->new_tile, MP_TUNNELBRIDGE)) {
 			if (IsTunnel(this->new_tile)) {
 				if (!this->is_tunnel) {
-					DiagDirection tunnel_enterdir = GetTunnelBridgeDirection(this->new_tile);
+					Direction tunnel_enterdir = GetTunnelBridgeDirection(this->new_tile);
 					if (tunnel_enterdir != this->exitdir) {
 						this->err = EC_NO_WAY;
 						return false;
@@ -362,7 +362,7 @@ protected:
 				}
 			} else { // IsBridge(new_tile)
 				if (!this->is_bridge) {
-					DiagDirection ramp_enderdir = GetTunnelBridgeDirection(this->new_tile);
+					Direction ramp_enderdir = GetTunnelBridgeDirection(this->new_tile);
 					if (ramp_enderdir != this->exitdir) {
 						this->err = EC_NO_WAY;
 						return false;
@@ -379,7 +379,7 @@ protected:
 			/* how big step we must do to get to the last platform tile? */
 			this->tiles_skipped = length - 1;
 			/* move to the platform end */
-			TileIndexDiff diff = TileOffsByDiagDir(this->exitdir);
+		TileIndexDiff diff = TileOffsByDiagDir(DirToDiagDir(this->exitdir));
 			diff *= this->tiles_skipped;
 			this->new_tile = TileAdd(this->new_tile, diff);
 			return true;
@@ -393,7 +393,7 @@ protected:
 	{
 		/* rail and road depots cause reversing */
 		if (!IsWaterTT() && IsDepotTypeTile(this->old_tile, TT())) {
-			DiagDirection exitdir = IsRailTT() ? GetRailDepotDirection(this->old_tile) : GetRoadDepotDirection(this->old_tile);
+			Direction exitdir = IsRailTT() ? DiagDirToDir(GetRailDepotDirection(this->old_tile)) : DiagDirToDir(GetRoadDepotDirection(this->old_tile));
 			if (exitdir != this->exitdir) {
 				/* reverse */
 				this->new_tile = this->old_tile;
@@ -408,12 +408,12 @@ protected:
 		}
 
 		/* Single tram bits and standard road stops cause reversing. */
-		if (IsRoadTT() && ((this->IsTram() && GetSingleTramBit(this->old_tile) == ReverseDiagDir(this->exitdir)) ||
-				(IsBayRoadStopTile(this->old_tile) && GetBayRoadStopDir(this->old_tile) == ReverseDiagDir(this->exitdir)))) {
+		if (IsRoadTT() && ((this->IsTram() && DiagDirToDir(GetSingleTramBit(this->old_tile)) == ReverseDir(this->exitdir)) ||
+				(IsBayRoadStopTile(this->old_tile) && DiagDirToDir(GetBayRoadStopDir(this->old_tile)) == ReverseDir(this->exitdir)))) {
 			/* reverse */
 			this->new_tile = this->old_tile;
 			this->new_td_bits = TrackdirToTrackdirBits(ReverseTrackdir(this->old_td));
-			this->exitdir = ReverseDiagDir(this->exitdir);
+			this->exitdir = ReverseDir(this->exitdir);
 			this->tiles_skipped = 0;
 			this->is_tunnel = false;
 			this->is_bridge = false;
@@ -429,12 +429,12 @@ protected:
 	{
 		if (IsRoadTT() && !this->IsTram()) {
 			/* if we reached the end of road, we can reverse the RV and continue moving */
-			this->exitdir = ReverseDiagDir(this->exitdir);
+			this->exitdir = ReverseDir(this->exitdir);
 			/* new tile will be the same as old one */
 			this->new_tile = this->old_tile;
 			/* set new trackdir bits to all reachable trackdirs */
 			QueryNewTileTrackStatus();
-			this->new_td_bits &= DiagdirReachesTrackdirs(this->exitdir);
+			// TODO: Mask trackdirs for reversed direction if needed
 			if (this->new_td_bits != TRACKDIR_BIT_NONE) {
 				/* we have some trackdirs reachable after reversal */
 				return true;

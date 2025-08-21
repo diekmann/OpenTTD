@@ -361,7 +361,7 @@ static CommandCost RemoveRoad(TileIndex tile, DoCommandFlags flags, RoadBits pie
 		CommandCost cost(EXPENSES_CONSTRUCTION);
 		if (IsTileType(tile, MP_TUNNELBRIDGE)) {
 			/* Removing any roadbit in the bridge axis removes the roadtype (that's the behaviour remove-long-roads needs) */
-			if ((AxisToRoadBits(DiagDirToAxis(GetTunnelBridgeDirection(tile))) & pieces) == ROAD_NONE) return CommandCost((rtt == RTT_TRAM) ? STR_ERROR_THERE_IS_NO_TRAMWAY : STR_ERROR_THERE_IS_NO_ROAD);
+					   if ((AxisToRoadBits(DiagDirToAxis(DirToDiagDir(GetTunnelBridgeDirection(tile)))) & pieces) == ROAD_NONE) return CommandCost((rtt == RTT_TRAM) ? STR_ERROR_THERE_IS_NO_TRAMWAY : STR_ERROR_THERE_IS_NO_ROAD);
 
 			TileIndex other_end = GetOtherTunnelBridgeEnd(tile);
 			/* Pay for *every* tile of the bridge or tunnel */
@@ -795,7 +795,7 @@ CommandCost CmdBuildRoad(DoCommandFlags flags, TileIndex tile, RoadBits pieces, 
 		case MP_TUNNELBRIDGE: {
 			if (GetTunnelBridgeTransportType(tile) != TRANSPORT_ROAD) goto do_clear;
 			/* Only allow building the outern roadbit, so building long roads stops at existing bridges */
-			if (MirrorRoadBits(DiagDirToRoadBits(GetTunnelBridgeDirection(tile))) != pieces) goto do_clear;
+					   if (MirrorRoadBits(DiagDirToRoadBits(DirToDiagDir(GetTunnelBridgeDirection(tile)))) != pieces) goto do_clear;
 			if (HasTileRoadType(tile, rtt)) return CommandCost(STR_ERROR_ALREADY_BUILT);
 			/* Don't allow adding roadtype to the bridge/tunnel when vehicles are already driving on it */
 			CommandCost ret = TunnelBridgeIsFree(tile, GetOtherTunnelBridgeEnd(tile));
@@ -1032,12 +1032,12 @@ CommandCost CmdBuildLongRoad(DoCommandFlags flags, TileIndex end_tile, TileIndex
 			/* Only pay for the upgrade on one side of the bridges and tunnels */
 			if (IsTileType(tile, MP_TUNNELBRIDGE)) {
 				if (IsBridge(tile)) {
-					if (!had_bridge || GetTunnelBridgeDirection(tile) == dir) {
+									   if (!had_bridge || DirToDiagDir(GetTunnelBridgeDirection(tile)) == dir) {
 						cost.AddCost(ret.GetCost());
 					}
 					had_bridge = true;
 				} else { // IsTunnel(tile)
-					if (!had_tunnel || GetTunnelBridgeDirection(tile) == dir) {
+									   if (!had_tunnel || DirToDiagDir(GetTunnelBridgeDirection(tile)) == dir) {
 						cost.AddCost(ret.GetCost());
 					}
 					had_tunnel = true;
@@ -2114,10 +2114,11 @@ static const TrackBits _road_trackbits[16] = {
 	TRACK_BIT_ALL,                                   // ROAD_ALL
 };
 
-static TrackStatus GetTileTrackStatus_Road(TileIndex tile, TransportType mode, uint sub_mode, DiagDirection side)
+static TrackStatus GetTileTrackStatus_Road(TileIndex tile, TransportType mode, uint sub_mode, Direction side)
 {
 	TrackdirBits trackdirbits = TRACKDIR_BIT_NONE;
 	TrackdirBits red_signals = TRACKDIR_BIT_NONE; // crossing barred
+	DiagDirection diagdir = DirToDiagDir(side);
 	switch (mode) {
 		case TRANSPORT_RAIL:
 			if (IsLevelCrossing(tile)) trackdirbits = TrackBitsToTrackdirBits(GetCrossingRailBits(tile));
@@ -2132,7 +2133,7 @@ static TrackStatus GetTileTrackStatus_Road(TileIndex tile, TransportType mode, u
 					RoadBits bits = GetRoadBits(tile, rtt);
 
 					/* no roadbit at this side of tile, return 0 */
-					if (side != INVALID_DIAGDIR && (DiagDirToRoadBits(side) & bits) == 0) break;
+					if (diagdir != INVALID_DIAGDIR && (DiagDirToRoadBits(diagdir) & bits) == 0) break;
 
 					uint multiplier = drd_to_multiplier[(rtt == RTT_TRAM) ? DRD_NONE : GetDisallowedRoadDirections(tile)];
 					if (!HasRoadWorks(tile)) trackdirbits = (TrackdirBits)(_road_trackbits[bits] * multiplier);
@@ -2142,7 +2143,7 @@ static TrackStatus GetTileTrackStatus_Road(TileIndex tile, TransportType mode, u
 				case ROAD_TILE_CROSSING: {
 					Axis axis = GetCrossingRoadAxis(tile);
 
-					if (side != INVALID_DIAGDIR && axis != DiagDirToAxis(side)) break;
+					if (diagdir != INVALID_DIAGDIR && axis != DiagDirToAxis(diagdir)) break;
 
 					trackdirbits = TrackBitsToTrackdirBits(AxisToTrackBits(axis));
 					if (IsCrossingBarred(tile)) {
@@ -2164,7 +2165,7 @@ static TrackStatus GetTileTrackStatus_Road(TileIndex tile, TransportType mode, u
 				case ROAD_TILE_DEPOT: {
 					DiagDirection dir = GetRoadDepotDirection(tile);
 
-					if (side != INVALID_DIAGDIR && side != dir) break;
+					if (diagdir != INVALID_DIAGDIR && diagdir != dir) break;
 
 					trackdirbits = TrackBitsToTrackdirBits(DiagDirToDiagTrackBits(dir));
 					break;

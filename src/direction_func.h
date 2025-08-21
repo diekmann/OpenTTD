@@ -5,12 +5,12 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** @file direction_func.h Different functions related to conversions between directions. */
 
 #ifndef DIRECTION_FUNC_H
 #define DIRECTION_FUNC_H
 
 #include "direction_type.h"
+#include "slope_type.h"
 
 /**
  * Checks if an integer value is a valid DiagDirection
@@ -24,6 +24,16 @@ inline bool IsValidDiagDirection(DiagDirection d)
 }
 
 /**
+ * Convert DiagDirection to Direction (for compatibility).
+ * Assumes DiagDirection values map to the first 4 Direction values.
+ */
+inline Direction DirToDirection(DiagDirection d)
+{
+	assert(IsValidDiagDirection(d));
+	return static_cast<Direction>(d);
+}
+
+/**
  * Checks if an integer value is a valid Direction
  *
  * @param d The value to check
@@ -33,8 +43,80 @@ inline bool IsValidDirection(Direction d)
 {
 	return d < DIR_END;
 }
+/**
+ * Convert a Direction to the axis.
+ *
+ * This function returns the axis which belongs to the given
+ * Direction. The axis X belongs to the Direction
+ * NE, SW, E, W. Y belongs to N, S, SE, NW.
+ *
+ * @param d The Direction
+ * @return The axis which belongs to the direction
+ */
+inline Axis DirToAxis(Direction d)
+{
+	assert(IsValidDirection(d));
+	// Diagonal directions: odd values (NE, SE, SW, NW)
+	// Cardinal directions: even values (N, E, S, W)
+	// Map: X axis for E/W/NE/SW, Y axis for N/S/NW/SE
+	switch (d) {
+		case DIR_NE:
+		case DIR_SW:
+		case DIR_E:
+		case DIR_W:
+			return AXIS_X;
+		case DIR_N:
+		case DIR_S:
+		case DIR_SE:
+		case DIR_NW:
+			return AXIS_Y;
+		default:
+			return AXIS_END;
+	}
+}
+
+
+
+
+
 
 /**
+ * Returns the direction for a given slope value (stub for 8-way logic).
+ * @param slope The slope value
+ * @return The corresponding Direction
+ */
+
+/**
+ * Returns the direction for a given slope value (supports 8-way logic).
+ * @param slope The slope value
+ * @return The corresponding Direction, or DIR_END if not a valid slope direction
+ */
+inline Direction GetSlopeDirection(Slope slope)
+{
+	switch (slope) {
+		case SLOPE_N:
+			return DIR_N;
+		case SLOPE_E:
+			return DIR_E;
+		case SLOPE_S:
+			return DIR_S;
+		case SLOPE_W:
+			return DIR_W;
+		case SLOPE_NE:
+			return DIR_NE;
+		case SLOPE_SE:
+			return DIR_SE;
+		case SLOPE_SW:
+			return DIR_SW;
+		case SLOPE_NW:
+			return DIR_NW;
+		default:
+			return DIR_END;
+	}
+}
+
+
+	/**
  * Checks if an integer value is a valid Axis
  *
  * @param d The value to check
@@ -47,7 +129,7 @@ inline bool IsValidAxis(Axis d)
 
 /**
  * Return the reverse of a direction
- *
+	 *
  * @param d The direction to get the reverse from
  * @return The reverse Direction
  */
@@ -134,7 +216,7 @@ inline DiagDirDiff DiagDirDifference(DiagDirection d0, DiagDirection d1)
 	assert(IsValidDiagDirection(d1));
 	/* Cast to uint so compiler can use bitmask. Result can never be negative. */
 	return (DiagDirDiff)((uint)(d0 - d1) % 4);
-}
+	}
 
 /**
  * Applies a difference on a DiagDirection
