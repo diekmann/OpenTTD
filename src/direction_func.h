@@ -185,6 +185,18 @@ inline Direction DiagDirToDir(DiagDirection dir)
 	return (Direction)(dir * 2 + 1);
 }
 
+/**
+ * Check if a Direction is diagonal (NE, SE, SW, NW).
+ *
+ * @param dir The direction to check
+ * @return true if the direction is diagonal
+ */
+inline bool IsDiagonalDirection(Direction dir)
+{
+	assert(IsValidDirection(dir));
+	return (dir & 1) != 0;
+}
+
 
 /**
  * Select the other axis as provided.
@@ -279,18 +291,6 @@ inline DiagDirection XYNSToDiagDir(Axis xy, uint ns)
 {
 	assert(IsValidAxis(xy));
 	return (DiagDirection)(xy * 3 ^ ns * 2);
-}
-
-/**
- * Checks if a given Direction is diagonal.
- *
- * @param dir The given direction.
- * @return True if the direction is diagonal.
- */
-inline bool IsDiagonalDirection(Direction dir)
-{
-	assert(IsValidDirection(dir));
-	return (dir & 1) != 0;
 }
 
 #endif /* DIRECTION_FUNC_H */

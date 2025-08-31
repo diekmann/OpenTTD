@@ -16,6 +16,7 @@
 #include "../town_map.h"
 #include "../tree_map.h"
 #include "../tunnel_map.h"
+#include "../tunnelbridge_map.h"
 #include "../water_map.h"
 #include "../industry_map.h"
 #include "../depot_map.h"

@@ -54,7 +54,10 @@ inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, R
 	t.m2() = 0;
 	t.m3() = 0;
 	t.m4() = 0;
-	t.m5() = TRANSPORT_ROAD << 2 | d;
+	t.m5() = 0;  // Clear all bits first
+	// For road tunnels, continue to use only 2 bits (DiagDirection only)
+	SB(t.m5(), 0, 2, d);           // Store direction in bits 0-1 only
+	SB(t.m5(), 2, 2, TRANSPORT_ROAD);
 	SB(t.m6(), 2, 4, 0);
 	t.m7() = 0;
 	t.m8() = 0;
@@ -67,6 +70,46 @@ inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, R
  * Makes a rail tunnel entrance
  * @param t the entrance of the tunnel
  * @param o the owner of the entrance
+ * @param d the direction facing out of the tunnel (supports all 8 directions)
+ * @param r the rail type used in the tunnel
+ */
+inline void MakeRailTunnel(Tile t, Owner o, Direction d, RailType r)
+{
+	SetTileType(t, MP_TUNNELBRIDGE);
+	SetTileOwner(t, o);
+	t.m2() = 0;
+	t.m3() = 0;
+	t.m4() = 0;
+	t.m5() = 0;  // Clear all bits first
+	
+	// For 8-direction tunnels, use a different storage strategy:
+	// If it's an orthogonal direction, use extended format with bit 5 as flag
+	// If it's a diagonal direction, use standard DiagDirection format
+	if (d == DIR_N || d == DIR_E || d == DIR_S || d == DIR_W) {
+		// Orthogonal directions - use extended format
+		// Store direction in bits 0-2, but we need to avoid conflict with transport type in bits 2-3
+		// Solution: Use bits 6-7 and bit 0 to store the 3-bit direction
+		SB(t.m5(), 0, 1, d & 1);           // Store bit 0 of direction
+		SB(t.m5(), 6, 2, (d >> 1) & 3);   // Store bits 1-2 of direction  
+		SB(t.m5(), 5, 1, 1);              // Set bit 5 to indicate extended format
+	} else {
+		// Diagonal directions - use standard format  
+		DiagDirection diag_d = DirToDiagDir(d);
+		SB(t.m5(), 0, 2, diag_d);          // Store DiagDirection in bits 0-1
+		SB(t.m5(), 5, 1, 0);              // Clear bit 5 to indicate standard format
+	}
+	
+	SB(t.m5(), 2, 2, TRANSPORT_RAIL);
+	SB(t.m6(), 2, 4, 0);
+	t.m7() = 0;
+	t.m8() = 0;
+	SetRailType(t, r);
+}
+
+/**
+ * Makes a rail tunnel entrance (backward compatibility with DiagDirection)
+ * @param t the entrance of the tunnel
+ * @param o the owner of the entrance
  * @param d the direction facing out of the tunnel
  * @param r the rail type used in the tunnel
  */
@@ -77,7 +120,10 @@ inline void MakeRailTunnel(Tile t, Owner o, DiagDirection d, RailType r)
 	t.m2() = 0;
 	t.m3() = 0;
 	t.m4() = 0;
-	t.m5() = TRANSPORT_RAIL << 2 | d;
+	// For backward compatibility, use standard 4-direction format
+	t.m5() = 0;  // Clear all bits first
+	SB(t.m5(), 0, 2, d);           // Store direction in bits 0-1 only
+	SB(t.m5(), 2, 2, TRANSPORT_RAIL);
 	SB(t.m6(), 2, 4, 0);
 	t.m7() = 0;
 	t.m8() = 0;

@@ -15,13 +15,10 @@
 
 
 /**
- * Get the direction pointing to the other end.
- *
- * Tunnel: Get the direction facing into the tunnel
- * Bridge: Get the direction pointing onto the bridge
+ * Get the direction pointing to the other end of the tunnel or bridge.
  * @param t The tile to analyze
  * @pre IsTileType(t, MP_TUNNELBRIDGE)
- * @return the above mentioned direction
+ * @return the direction pointing to the other end
  */
 inline DiagDirection GetTunnelBridgeDirection(Tile t)
 {
@@ -109,6 +106,29 @@ inline void SetTunnelBridgeReservation(Tile t, bool b)
 }
 
 /**
+ * Get the extended direction for tunnels (8 directions) when supported.
+ * Falls back to standard direction for bridges and older tunnels.
+ * @param t The tile to analyze
+ * @pre IsTileType(t, MP_TUNNELBRIDGE)
+ * @return the direction as full Direction (8 possible values)
+ */
+inline Direction GetTunnelBridgeFullDirection(Tile t)
+{
+	assert(IsTileType(t, MP_TUNNELBRIDGE));
+	if (IsTunnel(t) && GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL && HasBit(t.m5(), 5)) {
+		// Rail tunnel with 8-direction support (bit 5 set)
+		// Reconstruct direction from bits 0, 6-7
+		uint8_t bit0 = GB(t.m5(), 0, 1);
+		uint8_t bits67 = GB(t.m5(), 6, 2);
+		uint8_t dir = bit0 | (bits67 << 1);
+		return (Direction)dir;
+	} else {
+		// Standard 4-direction tunnel/bridge - convert DiagDirection to Direction
+		return DiagDirToDir(GetTunnelBridgeDirection(t));
+	}
+}
+
+/**
  * Get the reserved track bits for a rail tunnel/bridge
  * @pre IsTileType(t, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL
  * @param t the tile
@@ -116,7 +136,26 @@ inline void SetTunnelBridgeReservation(Tile t, bool b)
  */
 inline TrackBits GetTunnelBridgeReservationTrackBits(Tile t)
 {
-	return HasTunnelBridgeReservation(t) ? DiagDirToDiagTrackBits(GetTunnelBridgeDirection(t)) : TRACK_BIT_NONE;
+	if (!HasTunnelBridgeReservation(t)) return TRACK_BIT_NONE;
+	
+	if (IsTunnel(t)) {
+		// For tunnels, convert full direction to track bits
+		Direction dir = GetTunnelBridgeFullDirection(t);
+		switch (dir) {
+			case DIR_N:  return TRACK_BIT_UPPER;
+			case DIR_NE: return TRACK_BIT_Y;
+			case DIR_E:  return TRACK_BIT_RIGHT;
+			case DIR_SE: return TRACK_BIT_Y;
+			case DIR_S:  return TRACK_BIT_LOWER;
+			case DIR_SW: return TRACK_BIT_X;
+			case DIR_W:  return TRACK_BIT_LEFT;
+			case DIR_NW: return TRACK_BIT_X;
+			default:     return TRACK_BIT_NONE;
+		}
+	} else {
+		// For bridges, use the old logic
+		return DiagDirToDiagTrackBits(GetTunnelBridgeDirection(t));
+	}
 }
 
 #endif /* TUNNELBRIDGE_MAP_H */

@@ -661,7 +661,25 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 
 	auto [start_tileh, start_z] = GetTileSlopeZ(start_tile);
 	DiagDirection direction = GetInclinedSlopeDirection(start_tileh);
+	Direction full_direction = INVALID_DIR;
+	
+	// For rail tunnels, also check for steep slopes that support diagonal tunnels
+	if (direction == INVALID_DIAGDIR && transport_type == TRANSPORT_RAIL) {
+		switch (start_tileh) {
+			case SLOPE_STEEP_N: direction = DIAGDIR_NE; full_direction = DIR_N; break;
+			case SLOPE_STEEP_E: direction = DIAGDIR_SE; full_direction = DIR_E; break;
+			case SLOPE_STEEP_S: direction = DIAGDIR_SW; full_direction = DIR_S; break;
+			case SLOPE_STEEP_W: direction = DIAGDIR_NW; full_direction = DIR_W; break;
+			default: break;
+		}
+	}
+	
 	if (direction == INVALID_DIAGDIR) return CommandCost(STR_ERROR_SITE_UNSUITABLE_FOR_TUNNEL);
+	
+	// If full_direction wasn't set (normal diagonal tunnel), use the diagonal direction
+	if (full_direction == INVALID_DIR) {
+		full_direction = DiagDirToDir(direction);
+	}
 
 	if (HasTileWaterGround(start_tile)) return CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER);
 
@@ -673,7 +691,7 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 	 * cost before the loop will yield different costs depending on start-
 	 * position, because of increased-cost-by-length: 'cost += cost >> 3' */
 
-	TileIndexDiff delta = TileOffsByDiagDir(direction);
+	TileIndexDiff delta = TileOffsByDir(full_direction);
 	DiagDirection tunnel_in_way_dir;
 	if (DiagDirToAxis(direction) == AXIS_Y) {
 		tunnel_in_way_dir = (TileX(start_tile) < (Map::MaxX() / 2)) ? DIAGDIR_SW : DIAGDIR_NE;
@@ -731,7 +749,24 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 	cost.AddCost(ret.GetCost());
 
 	/* slope of end tile must be complementary to the slope of the start tile */
-	if (end_tileh != ComplementSlope(start_tileh)) {
+	bool slopes_match = false;
+	if (IsSteepSlope(start_tileh)) {
+		// For steep slopes (diagonal tunnels), check for opposite steep slope
+		Slope expected_end_slope = SLOPE_FLAT;
+		switch (start_tileh) {
+			case SLOPE_STEEP_N: expected_end_slope = SLOPE_STEEP_S; break;
+			case SLOPE_STEEP_E: expected_end_slope = SLOPE_STEEP_W; break;
+			case SLOPE_STEEP_S: expected_end_slope = SLOPE_STEEP_N; break;
+			case SLOPE_STEEP_W: expected_end_slope = SLOPE_STEEP_E; break;
+			default: break; // Should not happen for steep slopes
+		}
+		slopes_match = (end_tileh == expected_end_slope);
+	} else {
+		// For regular slopes, use the standard complementary slope check
+		slopes_match = (end_tileh == ComplementSlope(start_tileh));
+	}
+	
+	if (!slopes_match) {
 		/* Mark the tile as already cleared for the terraform command.
 		 * Do this for all tiles (like trees), not only objects. */
 		ClearedObjectArea *coa = FindClearedObject(end_tile);
@@ -777,10 +812,73 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 		uint num_pieces = (tiles + 2) * TUNNELBRIDGE_TRACKBIT_FACTOR;
 		if (transport_type == TRANSPORT_RAIL) {
 			if (c != nullptr) c->infrastructure.rail[railtype] += num_pieces;
-			MakeRailTunnel(start_tile, company, direction,                 railtype);
-			MakeRailTunnel(end_tile,   company, ReverseDiagDir(direction), railtype);
+			
+			Debug(misc, 0, "CmdBuildTunnel: Building rail tunnel from {} (x={},y={}) to {} (x={},y={})", 
+				  start_tile.base(), TileX(start_tile), TileY(start_tile),
+				  end_tile.base(), TileX(end_tile), TileY(end_tile));
+			Debug(misc, 0, "CmdBuildTunnel: Directions - start_dir={}, end_dir={}", 
+				  (uint)full_direction, (uint)ReverseDir(full_direction));
+			
+			// Debug tile state before modification
+			Debug(misc, 0, "CmdBuildTunnel: Before modification - start m5={:02X}, end m5={:02X}", 
+				  Tile(start_tile).m5(), Tile(end_tile).m5());
+			
+			// Explicitly cast to Direction to ensure we call the 8-direction version
+			Direction start_dir = static_cast<Direction>(full_direction);
+			Direction end_dir = static_cast<Direction>(ReverseDir(full_direction));
+			Debug(misc, 0, "CmdBuildTunnel: Explicit cast - start_dir={}, end_dir={}", 
+				  (uint)start_dir, (uint)end_dir);
+			
+			MakeRailTunnel(start_tile, company, start_dir, railtype);
+			MakeRailTunnel(end_tile,   company, end_dir, railtype);
+			
+			// Debug tile state after modification
+			Debug(misc, 0, "CmdBuildTunnel: After modification - start m5={:02X}, end m5={:02X}", 
+				  Tile(start_tile).m5(), Tile(end_tile).m5());
+			
+			Debug(misc, 0, "CmdBuildTunnel: Created tunnels - start_tile_dir={}, end_tile_dir={}", 
+				  (uint)GetTunnelBridgeFullDirection(start_tile), (uint)GetTunnelBridgeFullDirection(end_tile));
+			
+			// Let's debug the direction retrieval step by step for start tile
+			Tile start_obj(start_tile);
+			Debug(misc, 0, "CmdBuildTunnel: Start retrieval conditions - IsTunnel={}, TransportType={}, HasBit5={}", 
+				  IsTunnel(start_tile) ? 1 : 0, 
+				  (uint)GetTunnelBridgeTransportType(start_tile), 
+				  HasBit(start_obj.m5(), 5) ? 1 : 0);
+			if (HasBit(start_obj.m5(), 5)) {
+				uint8_t bit0 = GB(start_obj.m5(), 0, 1);
+				uint8_t bits67 = GB(start_obj.m5(), 6, 2);
+				uint8_t reconstructed = bit0 | (bits67 << 1);
+				Debug(misc, 0, "CmdBuildTunnel: Start retrieval debug - bit0={}, bits67={}, reconstructed={}", 
+					  bit0, bits67, reconstructed);
+			}
+			
+			// Same for end tile
+			Tile end_obj(end_tile);
+			if (HasBit(end_obj.m5(), 5)) {
+				uint8_t bit0 = GB(end_obj.m5(), 0, 1);
+				uint8_t bits67 = GB(end_obj.m5(), 6, 2);
+				uint8_t reconstructed = bit0 | (bits67 << 1);
+				Debug(misc, 0, "CmdBuildTunnel: End retrieval debug - bit0={}, bits67={}, reconstructed={}", 
+					  bit0, bits67, reconstructed);
+			}
+			
+			// Detailed bit analysis for both tiles
+			Tile start_tile_obj(start_tile);
+			Tile end_tile_obj(end_tile);
+			Debug(misc, 0, "CmdBuildTunnel: Start tile analysis - dir={}, m5={:02X}, bit0={}, bit5={}, bits6-7={}", 
+				  (uint)start_dir, start_tile_obj.m5(),
+				  HasBit(start_tile_obj.m5(), 0) ? 1 : 0,
+				  HasBit(start_tile_obj.m5(), 5) ? 1 : 0,
+				  GB(start_tile_obj.m5(), 6, 2));
+			Debug(misc, 0, "CmdBuildTunnel: End tile analysis - dir={}, m5={:02X}, bit0={}, bit5={}, bits6-7={}", 
+				  (uint)end_dir, end_tile_obj.m5(),
+				  HasBit(end_tile_obj.m5(), 0) ? 1 : 0,
+				  HasBit(end_tile_obj.m5(), 5) ? 1 : 0,
+				  GB(end_tile_obj.m5(), 6, 2));
+			
 			AddSideToSignalBuffer(start_tile, INVALID_DIAGDIR, company);
-			YapfNotifyTrackLayoutChange(start_tile, DiagDirToDiagTrack(direction));
+			YapfNotifyTrackLayoutChange(start_tile, DiagDirToDiagTrack(DirToDiagDir(full_direction)));
 		} else {
 			if (c != nullptr) c->infrastructure.road[roadtype] += num_pieces * 2; // A full diagonal road has two road bits.
 			RoadType road_rt = RoadTypeIsRoad(roadtype) ? roadtype : INVALID_ROADTYPE;
@@ -1831,14 +1929,47 @@ static void TileLoop_TunnelBridge(TileIndex tile)
 	}
 }
 
+/**
+ * Convert a Direction to TrackBits for tunnels.
+ * @param dir The direction
+ * @return The corresponding TrackBits
+ */
+static TrackBits DirectionToTrackBits(Direction dir)
+{
+	switch (dir) {
+		case DIR_N:  return TRACK_BIT_Y;      // North -> NW-SE axis
+		case DIR_NE: return TRACK_BIT_X;      // Northeast diagonal -> use X axis
+		case DIR_E:  return TRACK_BIT_X;      // East -> SW-NE axis 
+		case DIR_SE: return TRACK_BIT_Y;      // Southeast diagonal -> use Y axis
+		case DIR_S:  return TRACK_BIT_Y;      // South -> NW-SE axis
+		case DIR_SW: return TRACK_BIT_X;      // Southwest diagonal -> use X axis
+		case DIR_W:  return TRACK_BIT_X;      // West -> SW-NE axis
+		case DIR_NW: return TRACK_BIT_Y;      // Northwest diagonal -> use Y axis
+		default: return TRACK_BIT_NONE;
+	}
+}
+
 static TrackStatus GetTileTrackStatus_TunnelBridge(TileIndex tile, TransportType mode, uint sub_mode, DiagDirection side)
 {
 	TransportType transport_type = GetTunnelBridgeTransportType(tile);
 	if (transport_type != mode || (transport_type == TRANSPORT_ROAD && !HasTileRoadType(tile, (RoadTramType)sub_mode))) return 0;
 
-	DiagDirection dir = GetTunnelBridgeDirection(tile);
-	if (side != INVALID_DIAGDIR && side != ReverseDiagDir(dir)) return 0;
-	return CombineTrackStatus(TrackBitsToTrackdirBits(DiagDirToDiagTrackBits(dir)), TRACKDIR_BIT_NONE);
+	if (IsTunnel(tile)) {
+		// For tunnels, use the full direction to get proper track bits
+		Direction dir = GetTunnelBridgeFullDirection(tile);
+		// Check if side is compatible with tunnel direction
+		if (side != INVALID_DIAGDIR) {
+			DiagDirection tunnel_diag = DirToDiagDir(dir);
+			if (side != tunnel_diag && side != ReverseDiagDir(tunnel_diag)) return 0;
+		}
+		TrackBits track_bits = DirectionToTrackBits(dir);
+		return CombineTrackStatus(TrackBitsToTrackdirBits(track_bits), TRACKDIR_BIT_NONE);
+	} else {
+		// For bridges, use the old logic
+		DiagDirection dir = GetTunnelBridgeDirection(tile);
+		if (side != INVALID_DIAGDIR && side != ReverseDiagDir(dir)) return 0;
+		return CombineTrackStatus(TrackBitsToTrackdirBits(DiagDirToDiagTrackBits(dir)), TRACKDIR_BIT_NONE);
+	}
 }
 
 static void ChangeTileOwner_TunnelBridge(TileIndex tile, Owner old_owner, Owner new_owner)

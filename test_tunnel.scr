@@ -1,0 +1,4 @@
+// Simple test to build a tunnel and quit
+newgame 256 256
+build_tunnel 100 100 0
+quit
